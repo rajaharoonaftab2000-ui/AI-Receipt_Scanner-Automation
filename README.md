@@ -98,7 +98,7 @@ It can be adapted for expense tracking, accounting workflows, financial record m
 
 Demo Video
 
-"Watch the Demo" (./Receipt_Scanner_Bot_Fiverr_Demo.mp4)
+[Watch the Demo](./Receipt_Scanner_Bot_Fiverr_Demo.mp4)
 
 Project Status
 
