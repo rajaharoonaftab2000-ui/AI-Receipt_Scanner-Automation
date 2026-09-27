@@ -1,0 +1,271 @@
+{
+  "name": "Receipt Scanner Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "2d72d0fe-250a-4bd1-9979-986e06f3a372",
+      "name": "Telegram Trigger",
+      "webhookId": "2cf62ee8-41fc-4306-931a-eb2ca62d4e36"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.photo[$json.message.photo.length - 1].file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "9ccbdba3-74d6-4e76-883e-c43f1715cdce",
+      "name": "Get a file",
+      "webhookId": "99ca2ce3-405c-4308-9456-4d08b88ba518"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const binaryData = await this.helpers.getBinaryDataBuffer(0, 'data');\nconst base64 = binaryData.toString('base64');\n\nreturn {\n  json: {\n    chatId: $('Telegram Trigger').item.json.message.chat.id,\n    imageBase64: base64\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "8953aa98-cdd7-4eef-b347-ca9ae2fa8d00",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=Your-API-Key",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [\n      { \"text\": \"This is a photo of a receipt. Read it and extract the following details. Respond ONLY in this exact format:\\nStore: <store/shop name>\\nDate: <date on receipt, or 'not specified'>\\nAmount: <total amount as a number only, no currency symbol>\\nCategory: <one word category like Grocery, Food, Fuel, Shopping, Utilities, or Other>\" },\n      { \"inline_data\": { \"mime_type\": \"image/jpeg\", \"data\": \"{{ $json.imageBase64 }}\" } }\n    ]\n  }]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        672,
+        0
+      ],
+      "id": "6587a2f5-3e48-4bea-abb1-1658c5643842",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const text = $json.candidates[0].content.parts[0].text;\n\nconst store = text.match(/Store:\\s*(.+)/)?.[1]?.trim() || 'Unknown';\nconst date = text.match(/Date:\\s*(.+)/)?.[1]?.trim() || 'not specified';\nconst amount = text.match(/Amount:\\s*([\\d.]+)/)?.[1]?.trim() || '0';\nconst category = text.match(/Category:\\s*(.+)/)?.[1]?.trim() || 'Other';\n\nreturn {\n  json: {\n    chatId: $('Code in JavaScript').item.json.chatId,\n    store,\n    date,\n    amount,\n    category\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        0
+      ],
+      "id": "846bd449-4c57-4286-842e-10297fa1a387",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1vqKmaBfZvILjk9cZSBhY688jnePLMUgZh8YJusx70tw",
+          "mode": "list",
+          "cachedResultName": "Expenses",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1vqKmaBfZvILjk9cZSBhY688jnePLMUgZh8YJusx70tw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1vqKmaBfZvILjk9cZSBhY688jnePLMUgZh8YJusx70tw/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Store": "={{ $json.store }}",
+            "Category": "={{ $json.category }}",
+            "Amount": "={{ $json.amount }}",
+            "Date": "={{ $json.date }}",
+            "Logged At": "={{ $now.toFormat('yyyy-MM-dd HH:mm') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Store",
+              "displayName": "Store",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount",
+              "displayName": "Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Logged At",
+              "displayName": "Logged At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1120,
+        0
+      ],
+      "id": "258d1908-a4b4-4a00-b16c-0492be81af76",
+      "name": "Append row in sheet"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Code in JavaScript').item.json.chatId }}",
+        "text": "=Expense log ho gaya: \nStore: {{ $json.Store }} \nAmount: Rs. {{ $json.Amount }} \nCategory: {{ $json.Category }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1344,
+        0
+      ],
+      "id": "12e4da0c-3efe-4fbd-8d7d-2344e7982c21",
+      "name": "Send a text message",
+      "webhookId": "a8cf5bd8-99ed-4cdf-897a-ed0932a7d8d4"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "87c42996-5c11-4f1e-b73e-618d66dd242c",
+  "meta": {
+    "instanceId": "1afb6aab3770da28edd93afb11e067ae0dd5545efbb2d08a1dd75a767c9cb8d3"
+  },
+  "nodeGroups": [],
+  "id": "zfduaFyt0WZcOJCr",
+  "tags": []
+}
